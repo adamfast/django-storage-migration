@@ -2,12 +2,15 @@
 Migrate all the FileFields on a given Model to a new Storage backend.
 '''
 import logging
+
 from optparse import make_option
 
 from django.conf import settings
 from django.core.management.base import LabelCommand
 from django.core.files.storage import get_storage_class, default_storage
 from django.db.models import FileField, get_model
+from django.core.files.storage import FileSystemStorage
+
 
 OLD_STORAGE = getattr(settings, 'OLD_STORAGE', {})
 #: The storage engine where everything was stored in.
@@ -44,6 +47,7 @@ class Command(LabelCommand):
             return 'Skipped %s. Model not found.' % label
         field_names = []
         old_storages = {}
+
         # Find file fields in models
         for field in model_class._meta.fields:
             if isinstance(field, FileField):
@@ -59,6 +63,7 @@ class Command(LabelCommand):
                         old_storages[field_path] = OLD_STORAGE[field_path]
                     else:
                         old_storages[field_path] = OLD_DEFAULT_FILE_STORAGE
+
         # Move the files for all the models
         for instance in model_class._default_manager.all():
             logging.debug('Handling "%s"' % instance)
@@ -79,12 +84,12 @@ class Command(LabelCommand):
                 # do we have multiple files?
                 elif hasattr(field, 'names'):
                     for name in field.names:
-                        self.move_file(new_storage, old_storage, name, options)
+                        self.move_file(new_storage, name, options)
                 else:
-                    self.move_file(new_storage, old_storage, field.name, options)
+                    self.move_file(new_storage, field.name, options)
         return ''
 
-    def move_file(self, new_storage, old_storage, filename, options):
+    def move_file(self, new_storage, filename, options):
         '''
         Moves the file between storage engines.
 
@@ -92,11 +97,11 @@ class Command(LabelCommand):
 
         :param django.core.files.storage.Storage new_storage: the storage
             engine to which the files will be moved
-        :param django.core.files.storage.Storage old_storage: the storage
-            engine that contains the files
         :param str filename: the file we're moving
         :param dict options: the options of the command
         '''
+        old_storage = FileSystemStorage(location=settings.MEDIA_ROOT)
+
         # check whether file exists in old storage
         if not old_storage.exists(filename):
             logging.info('File doesn\'t exist in old storage, ignoring file.')
@@ -105,8 +110,5 @@ class Command(LabelCommand):
             logging.info('File already exists in storage, ignoring file.')
         else:
             logging.info('Moving file "%s" to new storage.' % filename)
-            if not settings.DEBUG:
-                f = old_storage.open(filename)
-                new_storage.save(filename, f)
-            else:
-                print 'Created file: %s' % filename
+            f = old_storage.open(filename)
+            new_storage.save(filename, f)
