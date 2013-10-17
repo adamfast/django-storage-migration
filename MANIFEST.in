@@ -2,4 +2,5 @@ include AUTHORS
 include CHANGELOG.rst
 include LICENSE
 include README.rst
+include *.in
 recursive-include storage_migration *.py
