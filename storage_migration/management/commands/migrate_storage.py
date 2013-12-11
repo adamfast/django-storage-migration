@@ -29,6 +29,7 @@ class Command(LabelCommand):
     args = '<app_name.Model app_name.Model2 ...>'
     label = 'model (app_name.ModelName)'
     help = __doc__
+
     option_list = LabelCommand.option_list + (
         make_option(
             '--overwrite', '-f', action='store_true', dest='overwrite',
@@ -38,13 +39,19 @@ class Command(LabelCommand):
             '--to-new', action='store_true', dest='to_new',
             help='Copy files from the current storage backend to the new storage backend'
         ),
+        make_option(
+            '--path', '-p', action='store_true', dest='path', default=settings.MEDIA_ROOT,
+            help=''
+        ),
     )
 
     def handle_label(self, label, **options):
         app_label, model_name = label.split('.')
         model_class = get_model(app_label, model_name)
+
         if model_class is None:
             return 'Skipped %s. Model not found.' % label
+
         field_names = []
         old_storages = {}
 
@@ -64,11 +71,16 @@ class Command(LabelCommand):
                     else:
                         old_storages[field_path] = OLD_DEFAULT_FILE_STORAGE
 
+        item_index = 1
+        item_count = model_class._default_manager.count()
+
         # Move the files for all the models
         for instance in model_class._default_manager.all():
             logging.debug('Handling "%s"' % instance)
             # check all field names
             for fn in field_names:
+                print '[{0} of {1}]'.format(item_index, item_count),
+
                 field = getattr(instance, fn)
                 if options['to_new']:
                     new_storage = old_storages['%s.%s' % (label, fn)]
@@ -100,7 +112,9 @@ class Command(LabelCommand):
         :param str filename: the file we're moving
         :param dict options: the options of the command
         '''
-        old_storage = FileSystemStorage(location=settings.MEDIA_ROOT)
+        old_storage = FileSystemStorage(location=options['path'])
+
+        print filename, old_storage.exists(filename), new_storage.exists(filename)
 
         # check whether file exists in old storage
         if not old_storage.exists(filename):
