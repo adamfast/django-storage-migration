@@ -40,7 +40,7 @@ class Command(LabelCommand):
             help='Copy files from the current storage backend to the new storage backend'
         ),
         make_option(
-            '--path', '-p', action='store_true', dest='path', default=settings.MEDIA_ROOT,
+            '--path', '-p', dest='path', default=settings.MEDIA_ROOT,
             help=''
         ),
     )
@@ -80,6 +80,7 @@ class Command(LabelCommand):
             # check all field names
             for fn in field_names:
                 print '[{0} of {1}]'.format(item_index, item_count),
+                item_index += 1
 
                 field = getattr(instance, fn)
                 if options['to_new']:
@@ -91,8 +92,10 @@ class Command(LabelCommand):
 
                 if field.name == '':
                     logging.debug('Field is empty, ignoring file.')
+                    print
                 elif new_storage == old_storage:
                     logging.debug('Same storage engine, ignoring file.')
+                    print
                 # do we have multiple files?
                 elif hasattr(field, 'names'):
                     for name in field.names:
