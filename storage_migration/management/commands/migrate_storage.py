@@ -4,6 +4,7 @@ Migrate all the FileFields on a given Model to a new Storage backend.
 import logging
 
 from optparse import make_option
+from ssl import SSLError
 
 from django.conf import settings
 from django.core.management.base import LabelCommand
@@ -116,15 +117,31 @@ class Command(LabelCommand):
         :param str filename: the file we're copying
         :param dict options: the options of the command
         '''
-
-        print filename, old_storage.exists(filename), new_storage.exists(filename)
         old_storage = OLD_DEFAULT_FILE_STORAGE
 
+        old_checked = False
+        while old_checked is False:
+            try:
+                exists_old = old_storage.exists(filename)
+                old_checked = True
+            except SSLError:
+                logger.error("SSLError trying to check old file existence")
+
+        new_checked = False
+        while new_checked is False:
+            try:
+                exists_new = new_storage.exists(filename)
+                new_checked = True
+            except SSLError:
+                logger.error("SSLError trying to check new file existence")
+
+        print filename, exists_old, exists_new
+
         # check whether file exists in old storage
-        if not old_storage.exists(filename):
+        if not exists_old:
             logger.info('File doesn\'t exist in old storage, ignoring file.')
         # check wether file alread exists in the new storage
-        elif not options['overwrite'] and new_storage.exists(filename):
+        elif not options['overwrite'] and exists_new:
             logger.info('File already exists in storage, ignoring file.')
         else:
             f = old_storage.open(filename)
