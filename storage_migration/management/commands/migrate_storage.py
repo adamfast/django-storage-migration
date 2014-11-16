@@ -11,6 +11,7 @@ from django.core.files.storage import get_storage_class, default_storage
 from django.db.models import FileField, get_model
 from django.core.files.storage import FileSystemStorage
 
+logger = logging.getLogger(__name__)
 
 OLD_STORAGE = getattr(settings, 'OLD_STORAGE', {})
 #: The storage engine where everything was stored in.
@@ -76,7 +77,7 @@ class Command(LabelCommand):
 
         # copy the files for all the models
         for instance in model_class._default_manager.all():
-            logging.debug('Handling "%s"' % instance)
+            logger.debug('Handling "%s"' % instance)
             # check all field names
             for fn in field_names:
                 print '[{0} of {1}]'.format(item_index, item_count),
@@ -91,10 +92,10 @@ class Command(LabelCommand):
                     new_storage = field.storage
 
                 if field.name == '':
-                    logging.debug('Field is empty, ignoring file.')
+                    logger.debug('Field is empty, ignoring file.')
                     print
                 elif new_storage == old_storage:
-                    logging.debug('Same storage engine, ignoring file.')
+                    logger.debug('Same storage engine, ignoring file.')
                     print
                 # do we have multiple files?
                 elif hasattr(field, 'names'):
@@ -121,10 +122,10 @@ class Command(LabelCommand):
 
         # check whether file exists in old storage
         if not old_storage.exists(filename):
-            logging.info('File doesn\'t exist in old storage, ignoring file.')
+            logger.info('File doesn\'t exist in old storage, ignoring file.')
         # check wether file alread exists in the new storage
         elif not options['overwrite'] and new_storage.exists(filename):
-            logging.info('File already exists in storage, ignoring file.')
+            logger.info('File already exists in storage, ignoring file.')
         else:
             f = old_storage.open(filename)
             new_storage.save(filename, f)
