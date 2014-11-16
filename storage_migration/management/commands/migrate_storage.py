@@ -74,7 +74,7 @@ class Command(LabelCommand):
         item_index = 1
         item_count = model_class._default_manager.count()
 
-        # Move the files for all the models
+        # copy the files for all the models
         for instance in model_class._default_manager.all():
             logging.debug('Handling "%s"' % instance)
             # check all field names
@@ -99,20 +99,20 @@ class Command(LabelCommand):
                 # do we have multiple files?
                 elif hasattr(field, 'names'):
                     for name in field.names:
-                        self.move_file(new_storage, name, options)
+                        self.copy_file(new_storage, name, options)
                 else:
-                    self.move_file(new_storage, field.name, options)
+                    self.copy_file(new_storage, field.name, options)
         return ''
 
-    def move_file(self, new_storage, filename, options):
+    def copy_file(self, new_storage, filename, options):
         '''
-        Moves the file between storage engines.
+        Copies the file between storage engines.
 
-        .. note:: If ``DEBUG`` is still ``True``, we won't move *anything*.
+        .. note:: If ``DEBUG`` is still ``True``, we won't copy *anything*.
 
         :param django.core.files.storage.Storage new_storage: the storage
-            engine to which the files will be moved
-        :param str filename: the file we're moving
+            engine to which the files will be copied
+        :param str filename: the file we're copying
         :param dict options: the options of the command
         '''
         old_storage = FileSystemStorage(location=options['path'])
@@ -126,6 +126,6 @@ class Command(LabelCommand):
         elif not options['overwrite'] and new_storage.exists(filename):
             logging.info('File already exists in storage, ignoring file.')
         else:
-            logging.info('Moving file "%s" to new storage.' % filename)
             f = old_storage.open(filename)
             new_storage.save(filename, f)
+            logger.info('Copying file "%s" to new storage.' % filename)
