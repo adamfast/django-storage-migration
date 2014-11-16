@@ -116,9 +116,9 @@ class Command(LabelCommand):
         :param str filename: the file we're copying
         :param dict options: the options of the command
         '''
-        old_storage = FileSystemStorage(location=options['path'])
 
         print filename, old_storage.exists(filename), new_storage.exists(filename)
+        old_storage = OLD_DEFAULT_FILE_STORAGE
 
         # check whether file exists in old storage
         if not old_storage.exists(filename):
