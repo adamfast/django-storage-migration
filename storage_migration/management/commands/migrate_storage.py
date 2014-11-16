@@ -144,6 +144,14 @@ class Command(LabelCommand):
         elif not options['overwrite'] and exists_new:
             logger.info('File already exists in storage, ignoring file.')
         else:
-            f = old_storage.open(filename)
-            new_storage.save(filename, f)
             logger.info('Copying file "%s" to new storage.' % filename)
+
+            retrieved = False
+            while retrieved is False:
+                try:
+                    f = old_storage.open(filename)
+                    new_storage.save(filename, f)
+
+                    retrieved = True
+                except SSLError:
+                    logger.error("SSLError trying to open file, trying again.")
